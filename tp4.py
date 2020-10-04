@@ -233,14 +233,17 @@ def desenha_arquivos(path):
     dirs = os.listdir(PATH)
     myfont = pygame.font.SysFont("Courier", 20)
     myfontbig =pygame.font.SysFont("Courier", 23)
-    surface = pygame.surface.Surface((LARGURA_TELA2, 500))
+    surface = pygame.surface.Surface((LARGURA_TELA2, 900))
   
     textos=[]
-    def escrever(label,idx=None):
+    def escrever(label,namePath='',idx=None):
+        COLOR=WHITE
+        if os.path.isdir(namePath):
+            COLOR=YELLOW
         if idxMouseOnTop == idx:
-            textos.append(myfontbig.render(label,1, WHITE))
+            textos.append(myfontbig.render(label,1, COLOR))
         else:
-            textos.append(myfont.render(label,1, WHITE))
+            textos.append(myfont.render(label,1, COLOR))
    
     t0='|{:^9}|{:80}'
     t1=".{:=<35}.{:=<10}.{:=<21}.{:=<21}."
@@ -269,7 +272,7 @@ def desenha_arquivos(path):
         formatdtmtime = ("{:{dfmt} {tfmt}}".format(dtmtime, dfmt="%d-%m-%Y", tfmt="%H:%M"))
         t="|{:35}|{:10}|{:21}|{:21}|"
         
-        escrever(t.format(name,str(dic[namePath][0]/1000),formatdtatime,formatdtmtime),idx)
+        escrever(t.format(name,str(dic[namePath][0]/1000),formatdtatime,formatdtmtime),namePath,idx)
         totArquivos +=1
         totBytes = totBytes + dic[namePath][0]
 
@@ -314,15 +317,108 @@ def clickEntrar(namePath):
     else:
         PATH=namePath
 
+import subprocess, psutil, time
+
+
 
 def voltarPath():
     global PATH
     aux=PATH.split('/')
-    print(PATH)
     if len(aux)>2:
         aux.pop()
         PATH='/'.join(aux)
 
+
+process_count=0
+processes={}
+page=0
+page_size=20
+pages=[]
+
+def titulo():
+    titulo = '{:^7}'.format("PID")
+    titulo = titulo + '{:^11}'.format("# Threads")
+    titulo = titulo + '{:^26}'.format("Criação")
+    titulo = titulo + '{:^9}'.format("T. Usu.")
+    titulo = titulo + '{:^9}'.format("T. Sis.")
+    titulo = titulo + '{:^12}'.format("Mem. (%)")
+    titulo = titulo + '{:^12}'.format("RSS")
+    titulo = titulo + '{:^12}'.format("VMS")
+    titulo = titulo + " Executável"
+    return titulo
+
+def pegar_info(pid):
+    try:
+        p = psutil.Process(pid)
+        texto = '{:^7}'.format(pid)
+        texto = texto + '{:^11}'.format(p.num_threads())
+        texto = texto + " " + time.ctime(p.create_time()) + " "
+        texto = texto + '{:8.2f}'.format(p.cpu_times().user)
+        texto = texto + '{:8.2f}'.format(p.cpu_times().system)
+        texto = texto + '{:10.2f}'.format(p.memory_percent()) + " MB"
+        rss = p.memory_info().rss/1024/1024
+        texto = texto + '{:10.2f}'.format(rss) + " MB"
+        vms = p.memory_info().vms/1024/1024
+        texto = texto + '{:10.2f}'.format(vms) + " MB"
+        texto = texto + " " + p.exe()
+        return texto
+    except:
+        pass  
+        
+def desenha_processos():
+    global process_count,processes,page,pages
+    
+    myfont = pygame.font.SysFont("Courier", 15)
+    lista = psutil.pids()
+    surface = pygame.surface.Surface((LARGURA_TELA2, 2000))
+
+  
+    def escrever(label,idx):
+        txt=myfont.render(label,1, WHITE)
+        surface.blit(txt, (2 ,100 +   20*idx))
+    qtd=0
+    for _page in pages:
+        print(len(_page))
+        qtd=len(_page)+qtd
+
+    escrever('Pagina: '+str(page+1)+'/'+str(len(pages)),-4)
+
+    escrever('Qtd de processos: '+str(qtd),-2)
+    escrever(titulo(),0)  
+    
+    aux=0
+    auxidx=0
+    qtd_processos=0
+    if qtd_processos != len(lista):
+        qtd_processos==len(lista)
+        pages=[]
+        for pid in lista:
+            info_process=pegar_info(pid)
+            if info_process != None:
+                if aux==0 and auxidx==0:
+                    pages.append([])
+                
+                if auxidx < page_size:
+                    pages[aux].append(info_process)
+                else:
+                    auxidx=0
+                    aux=aux+1
+                    pages.append([])
+                    pages[aux].append(info_process)
+                auxidx=auxidx+1
+      
+    
+
+    for idx,process in enumerate(pages[page]):
+        escrever(process,idx+1)
+
+       
+        
+        
+    DISPLAY.blit(surface,(20,20))
+    
+        
+ 
 DISPLAY.fill(BLACK)
 index=0
 index_copy=None
@@ -333,9 +429,8 @@ cont=0
 mouseIn=False
 surfaceVoltar = pygame.surface.Surface((102,29))
 idxMouseOnTop=''
-namePaths=[]
 dirs=[]
-aba=1
+aba=3
 while True:
     DISPLAY.fill(BLACK)
 
@@ -343,59 +438,73 @@ while True:
         if event.type==QUIT:
             pygame.quit()
             sys.exit() 
-
-        #============================================================== Primeira ABA
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                if index > 0  and index != 4:
-                    index=index-1
-            if event.key == pygame.K_RIGHT:
-                if index < 3 and index != 4:
-                    index=index+1
-            if event.key == pygame.K_SPACE:
-                if index_copy == None:
-                    index_copy=index
-                    index=4
-                else:
-                    index=index_copy
-                    index_copy=None
         #============================================================== Mudanca de aba
+        if event.type == pygame.KEYDOWN :
             if event.key == pygame.K_1:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA2,ALTURA_TELA),0,32)
+                DISPLAY=pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA),0,32)
                 aba=1
             if event.key == pygame.K_2:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA),0,32)
+                DISPLAY=pygame.display.set_mode((LARGURA_TELA2,ALTURA_TELA),0,32)
                 aba=2
+            if event.key == pygame.K_3:
+                DISPLAY=pygame.display.set_mode((LARGURA_TELA*2,ALTURA_TELA),0,32)
+                aba=3
+        #============================================================== Primeira ABA
+        if aba ==1:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    if index > 0  and index != 4:
+                        index=index-1
+                if event.key == pygame.K_RIGHT:
+                    if index < 3 and index != 4:
+                        index=index+1
+                if event.key == pygame.K_SPACE:
+                    if index_copy == None:
+                        index_copy=index
+                        index=4
+                    else:
+                        index=index_copy
+                        index_copy=None
+        
         #============================================================== Segunda Aba
-        if event.type == MOUSEMOTION:
-            mouseX,mouseY = event.pos
-            if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
-                mouseIn=True
-            else:
-                mouseIn=False
-                
-        if event.type == pygame.MOUSEBUTTONUP:  # or MOUSEBUTTONDOWN depending on what you want.
-            mouseX,mouseY=event.pos
-            if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
-                voltarPath()
+        if aba==2:
+            if event.type == MOUSEMOTION:
+                mouseX,mouseY = event.pos
+                if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
+                    mouseIn=True
+                else:
+                    mouseIn=False
+                    
+            if event.type == pygame.MOUSEBUTTONUP:  # or MOUSEBUTTONDOWN depending on what you want.
+                mouseX,mouseY=event.pos
+                if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
+                    voltarPath()
 
-        if event.type == MOUSEMOTION or event.type == pygame.MOUSEBUTTONUP and mouseX > 30 and mouseX <  1120:
-            mouseX,mouseY = event.pos
-    
-            firstY=147
-            if mouseY>firstY:
-                idxMouseOnTop=int((mouseY-firstY)/25)
-                if event.type == pygame.MOUSEBUTTONUP:
-                    clickEntrar(PATH+'/'+dirs[idxMouseOnTop])
-            else:
-                idxMouseOnTop=False
-        #==============================================================
-
+            if event.type == MOUSEMOTION or event.type == pygame.MOUSEBUTTONUP and mouseX > 30 and mouseX <  1120:
+                mouseX,mouseY = event.pos
+        
+                firstY=147
+                if mouseY>firstY:
+                    idxMouseOnTop=int((mouseY-firstY)/25)
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        clickEntrar(PATH+'/'+dirs[idxMouseOnTop])
+                else:
+                    idxMouseOnTop=False
+            #==============================================================
+        if aba ==3:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT and page < len(pages)-1:
+                    page=page+1
+                if event.key == pygame.K_LEFT and page > 0:
+                    page=page-1
+        
 
     if aba == 1:
-        desenha_arquivos(PATH)
-    if aba == 2:
         desenhar_monitoramento()
+    if aba == 2:
+        desenha_arquivos(PATH)
+    if aba == 3:
+        desenha_processos()
 
     pygame.display.update()
 
