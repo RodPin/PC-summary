@@ -341,7 +341,7 @@ def titulo():
     titulo = titulo + '{:^26}'.format("Criação")
     titulo = titulo + '{:^9}'.format("T. Usu.")
     titulo = titulo + '{:^9}'.format("T. Sis.")
-    titulo = titulo + '{:^12}'.format("Mem. (%)")
+    titulo = titulo + '{:^12}'.format("Memoria(%)")
     titulo = titulo + '{:^12}'.format("RSS")
     titulo = titulo + '{:^12}'.format("VMS")
     titulo = titulo + " Executável"
@@ -378,7 +378,6 @@ def desenha_processos():
         surface.blit(txt, (2 ,100 +   20*idx))
     qtd=0
     for _page in pages:
-        print(len(_page))
         qtd=len(_page)+qtd
 
     escrever('Pagina: '+str(page+1)+'/'+str(len(pages)),-4)
@@ -430,7 +429,7 @@ mouseIn=False
 surfaceVoltar = pygame.surface.Surface((102,29))
 idxMouseOnTop=''
 dirs=[]
-aba=3
+aba=2
 while True:
     DISPLAY.fill(BLACK)
 
@@ -447,7 +446,7 @@ while True:
                 DISPLAY=pygame.display.set_mode((LARGURA_TELA2,ALTURA_TELA),0,32)
                 aba=2
             if event.key == pygame.K_3:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA*2,ALTURA_TELA),0,32)
+                DISPLAY=pygame.display.set_mode((LARGURA_TELA2+100,ALTURA_TELA),0,32)
                 aba=3
         #============================================================== Primeira ABA
         if aba ==1:
