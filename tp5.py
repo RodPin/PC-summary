@@ -75,7 +75,7 @@ def desenhar_barra(label,percentage,i,total=0):
     #Define a fonte e o tamanho
     myfont = pygame.font.SysFont("Arial", 15)
     # Define o tamanho da superficie em que vamos desenhar
-    surface = pygame.surface.Surface((80,275))
+    surface = pygame.surface.Surface((80,273))
     # Define onde a barra sera desenhada horizontalmente
     BARRA_X=BORDA +ESPACO_BARRA*i + LARGURA_BARRA*i
     
