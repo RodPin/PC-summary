@@ -5,6 +5,10 @@ from pygame.locals import *
 import cpuinfo 
 import os
 from datetime import datetime
+import sched 
+import time
+
+scheduler = sched.scheduler(time.time, time.sleep)
 
 processador='Processador: '
 rede=''
@@ -67,11 +71,11 @@ def inGB(m):
 
 pygame.init()
 
-def desenhar_barra(label,percentage,i):
+def desenhar_barra(label,percentage,i,total=0):
     #Define a fonte e o tamanho
     myfont = pygame.font.SysFont("Arial", 15)
     # Define o tamanho da superficie em que vamos desenhar
-    surface = pygame.surface.Surface((80,260))
+    surface = pygame.surface.Surface((80,275))
     # Define onde a barra sera desenhada horizontalmente
     BARRA_X=BORDA +ESPACO_BARRA*i + LARGURA_BARRA*i
     
@@ -97,6 +101,13 @@ def desenhar_barra(label,percentage,i):
     #Prepara o texto em baixo da barra
     label = myfont.render(label, 1, WHITE)
     porcentagem = myfont.render(str(round(percentage*100)) + '%', 1, WHITE)
+    
+    if total != 0:
+        myfont2 = pygame.font.SysFont("Arial", 11)
+
+        total=float(total)
+        detalhes=myfont2.render(str(int(int(total)*percentage))+'/'+str(int(total))+'GB', 1, WHITE)
+        surface.blit(detalhes,(15 , ALTURA_BARRA + BARRA_Y+30))
 
     #Desenha na tela o texto
     surface.blit(porcentagem, (20 , ALTURA_BARRA + BARRA_Y))
@@ -166,10 +177,17 @@ def desenhar_monitoramento():
     memoria_usada="Memoria Usada:"+ inGB(mem.used)+ " GB"
     
     net= psutil.net_if_addrs()[rede][array]
-    ip= 'IP: '+ str(net.address)
-    netmask='NetMask: '+ str(net.netmask)
-    family='Family: ' + str(net.family)
-    ptp='Ptp: '+str(net.ptp)
+    nets=[]
+ 
+    for i in psutil.net_if_addrs():
+        for x in psutil.net_if_addrs()[i]:
+            if '192.' in x.address:
+                ip= 'IP: '+ str(net.address)
+                if ip not in nets:
+                    netmask='NetMask: '+ str(net.netmask)
+                    family='Family: ' + str(net.family)
+                    ptp='Ptp: '+str(net.ptp)
+                    nets=nets+[ip,netmask,family,ptp]
     memoria_os=[]
     net_os=[]
     if sistema == 'Linux':
@@ -200,8 +218,9 @@ def desenhar_monitoramento():
     processador_info=['Processador:',nome,arquitetura,frequencia_total,frequencia,bits,cpuscount,cpuscountfisical]
     memoria_info=['Memoria: ', memoria_total,memoria_disponivel,memoria_usada,memoria_livre]+memoria_os
     disco_info=['Disco:',disco_total,disco_usado,disco_livre]
-    net_info=['Rede:',ip,netmask,family,ptp]+net_os
+    net_info=['Rede:']+nets+net_os
     resumo_info=['Resumo: ',nome,cpuscount,memoria_total,memoria_disponivel,memoria_usada,memoria_livre,disco_total,disco_usado,disco_livre,ip,netmask]
+
 
     infos=[processador_info,memoria_info,disco_info,net_info,resumo_info]
 
@@ -213,7 +232,7 @@ def desenhar_monitoramento():
     desenhar_bolinhas(index,infos)
 
     desenhar_barra('Memoria',pct_memoria/100,0)
-    desenhar_barra('Disco',pct_disco/100,1)
+    desenhar_barra('Disco',pct_disco/100,1,inGB(disco.total))
 
     cont=cont+1
     if(cont==90):
@@ -228,7 +247,8 @@ def desenhar_monitoramento():
 
     desenhar_info(infos[index])
 
-def desenha_arquivos(path):
+def desenha_arquivos():
+    initial_time=time.clock()
     global PATH,mouseIn,idxMouseOnTop,dirs
     dirs = os.listdir(PATH)
     myfont = pygame.font.SysFont("Courier", 20)
@@ -301,6 +321,9 @@ def desenha_arquivos(path):
 
     DISPLAY.blit(surface,(20,20))
     DISPLAY.blit(surfaceVoltar,(32,38))
+    end_time=time.clock()
+    print('Desenho dos arquivos: Duracao:',end_time-initial_time)
+    
 
 
 def clickEntrar(namePath):
@@ -329,6 +352,7 @@ def voltarPath():
         PATH='/'.join(aux)
 
 
+process_count=0
 page=0
 page_size=20
 pages=[]
@@ -365,9 +389,10 @@ def pegar_info(pid):
 
 qtd_processos=0
 
-
 def desenha_processos():
-    global qtd_processos,processes,page,pages
+    initial_time=time.clock()
+
+    global page,pages,qtd_processos
     
     myfont = pygame.font.SysFont("Courier", 15)
     lista = psutil.pids()
@@ -412,10 +437,9 @@ def desenha_processos():
         escrever(process,idx+1)
 
        
-        
-        
     DISPLAY.blit(surface,(20,20))
-    
+    end_time=time.clock()
+    print('Desenho dos processos: Duracao:',end_time-initial_time)
         
  
 DISPLAY.fill(BLACK)
@@ -501,9 +525,9 @@ while True:
     if aba == 1:
         desenhar_monitoramento()
     if aba == 2:
-        desenha_arquivos(PATH)
+        scheduler.enter(0, 1, desenha_arquivos, ())
     if aba == 3:
         desenha_processos()
-
+    scheduler.run()
     pygame.display.update()
 
