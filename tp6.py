@@ -9,7 +9,7 @@ import sched
 import time
 import nmap
 import subprocess
-
+from threading import Thread
 
 scheduler = sched.scheduler(time.time, time.sleep)
 
@@ -442,103 +442,111 @@ def desenha_processos():
        
     DISPLAY.blit(surface,(20,20))
     end_time=time.process_time()
+
+#####################################################################33
+
+def retorna_codigo_ping(hostname):
+    plataforma = platform.system()
+    args = []
+    if plataforma == "Windows":
+        args = ["ping", "-n", "1", "-l", "1", "-w", "100", hostname]
+
+    else:
+        args = ['ping', '-c', '1', '-W', '1', hostname]
         
+    ret_cod = subprocess.call(args,stdout=open(os.devnull, 'w'),stderr=open(os.devnull, 'w'))
+    return ret_cod
+
+def get_host():
+    aux = psutil.net_if_addrs()[rede][array].address.split('.')
+    aux.pop()
+    return '.'.join(aux)+'.'
+def verifica_hosts(base_ip=get_host()):
+    host_validos = []
+    return_codes = dict()
+    for i in range(1,10):
+        print('i',i)
+        host_editado = base_ip + '{0}'.format(i)
+        return_codes[host_editado] = retorna_codigo_ping(host_editado)
+        if i %20 ==0:
+            print(".", end = "")
+        if return_codes[host_editado] == 0:
+            print('host_editado funfando')
+            print(host_editado)
+            host_validos.append(host_editado)
+
+    return host_validos
+
+def adiciona_info_portas(nm,host,info_hosts):
+    nm.scan(host)
+    info_hosts[host]={}
+    print('host ',host)
+    print(nm[host])      
+    info_hosts[host]['name']=nm[host]['hostnames'][0]['name']  
+    for proto in nm[host].all_protocols():
+        print('----------')
+        print('Protocolo : %s' % proto)
+        info_hosts[host]['protocol']=proto
+
+        lport = nm[host][proto].keys()
+        #lport.sort()
+        
+        aux=[]
+        for port in lport:
+            aux.append(str(port))
+            print ('Porta: %s\t Estado: %s' % (port, nm[host][proto][port]['state']))
+        info_hosts[host]['ports']=','.join(aux)
+                
+rede_info= None
+
+def obter_info_hosts():
+    global rede_info
+    hosts_verificados=verifica_hosts()
+    nm = nmap.PortScanner()
+    info_hosts= dict()
+    for host in hosts_verificados:
+        try:
+            print('Scanning host in hosts valido: ',host)
+            adiciona_info_portas(nm,host,info_hosts)
+        except:
+            pass
+        
+    rede_info = info_hosts 
+
+thread_rede = Thread(target = obter_info_hosts, args = ())
+thread_rede.start()
+
+
+#############################################    
 def desenha_hosts():
-    def retorna_codigo_ping(hostname):        
-        plataforma = platform.system()
-        args = []
-        if plataforma == "Windows":
-            args = ["ping", "-n", "1", "-l", "1", "-w", "100", hostname]
-    
-        else:
-            args = ['ping', '-c', '1', '-W', '1', hostname]
-            
-        ret_cod = subprocess.call(args,stdout=open(os.devnull, 'w'),stderr=open(os.devnull, 'w'))
-        return ret_cod
-
-    def get_host():
-        aux = psutil.net_if_addrs()[rede][array].address.split('.')
-        aux.pop()
-        return '.'.join(aux)+'.'
-    def verifica_hosts(base_ip=get_host()):
-        host_validos = []
-        return_codes = dict()
-        for i in range(1, 10):
-            print('i',i)
-            host_editado = base_ip + '{0}'.format(i)
-            return_codes[host_editado] = retorna_codigo_ping(host_editado)
-            if i %20 ==0:
-                print(".", end = "")
-            if return_codes[host_editado] == 0:
-                print('host_editado funfando')
-                print(host_editado)
-                host_validos.append(host_editado)
-
-        return host_validos
-
-    def adiciona_info_portas(nm,host,info_hosts):
-        nm.scan(host)
-        info_hosts[host]={}
-        print('host ',host)
-        print(nm[host])      
-        info_hosts[host]['name']=nm[host]['hostnames'][0]['name']  
-        for proto in nm[host].all_protocols():
-            print('----------')
-            print('Protocolo : %s' % proto)
-            info_hosts[host]['protocol']=proto
-
-            lport = nm[host][proto].keys()
-            #lport.sort()
-            
-            aux=[]
-            for port in lport:
-                aux.append(str(port))
-                print ('Porta: %s\t Estado: %s' % (port, nm[host][proto][port]['state']))
-            info_hosts[host]['ports']=','.join(aux)
-                    
-    def obter_info_hosts(hosts_verificados):
-        nm = nmap.PortScanner()
-        info_hosts= dict()
-        for host in hosts_verificados:
-            try:
-                print('Scanning host in hosts valido: ',host)
-                adiciona_info_portas(nm,host,info_hosts)
-            except:
-                pass
-            
-        return info_hosts
-  
     myfont = pygame.font.SysFont("Courier", 20)
     surface = pygame.surface.Surface((LARGURA_TELA2, 900))
   
     textos=[]
 
-    hosts_verificados = verifica_hosts()
-    hosts = obter_info_hosts(hosts_verificados)
-    print('host info @@@@@@')
-    print(hosts)
-    t="|{:^20}|{:^25}|{:^16}|{:^21}|"
-    textos.append(myfont.render(t.format('Host','Nome','Protocolo','Portas'),1, WHITE))
+    if thread_rede.is_alive():
+        texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
+        surface.blit(texto, (0 , 0))       
+        DISPLAY.blit(surface,(400,200))
+    else:    
+        t="|{:^20}|{:^25}|{:^16}|{:^21}|"
+        textos.append(myfont.render(t.format('Host','Nome','Protocolo','Portas'),1, WHITE))
+        thread_rede.join()
+        hosts = rede_info
+        def getInfo(info):
+            if info in hosts[host]:
+                return hosts[host][info]
+            return ''
 
-    def getInfo(info):
-        if info in hosts[host]:
-            return hosts[host][info]
-        return ''
+        for idx,host in enumerate(hosts):
+            label = t.format(host,getInfo('name'),getInfo('protocol'),getInfo('ports'))
+            
+            textos.append(myfont.render(label,1, WHITE))
 
-    for idx,host in enumerate(hosts):
-        label = t.format(host,getInfo('name'),getInfo('protocol'),getInfo('ports'))
-        
-        textos.append(myfont.render(label,1, WHITE))
+        for idx,texto in enumerate(textos):
+            surface.blit(texto, (2 , 25*idx))       
 
-    for idx,texto in enumerate(textos):
-        surface.blit(texto, (2 , 25*idx))       
-
-    DISPLAY.blit(surface,(20,20))
-
-
-    
-        
-
+        DISPLAY.blit(surface,(20,20))
 
 
 DISPLAY.fill(BLACK)
