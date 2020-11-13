@@ -293,7 +293,7 @@ def desenha_arquivos():
         formatdtatime = ("{:{dfmt} {tfmt}}".format(dtatime, dfmt="%d-%m-%Y", tfmt="%H:%M"))
         dtmtime = datetime.fromtimestamp(dic[namePath][2])
         formatdtmtime = ("{:{dfmt} {tfmt}}".format(dtmtime, dfmt="%d-%m-%Y", tfmt="%H:%M"))
-        t="|{:35}|{:10}|{:21}|{:21}|"
+        t="|{:35}|{:>10}|{:21}|{:21}|"
         
         escrever(t.format(name,str(dic[namePath][0]/1000),formatdtatime,formatdtmtime),namePath,idx)
         totArquivos +=1
