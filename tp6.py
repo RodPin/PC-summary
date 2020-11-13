@@ -533,10 +533,14 @@ def desenha_hosts():
         textos.append(myfont.render(t.format('Host','Nome','Protocolo','Portas'),1, WHITE))
         thread_rede.join()
         hosts = rede_info
+        UNKNOWN = 'Desconhecido'
         def getInfo(info):
             if info in hosts[host]:
+                if hosts[host][info] == '':
+
+                    return UNKNOWN
                 return hosts[host][info]
-            return ''
+            return UNKNOWN
 
         for idx,host in enumerate(hosts):
             label = t.format(host,getInfo('name'),getInfo('protocol'),getInfo('ports'))
