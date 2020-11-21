@@ -471,7 +471,6 @@ def verifica_hosts(base_ip=get_host()):
         if i %20 ==0:
             print(".", end = "")
         if return_codes[host_editado] == 0:
-            print('host_editado funfando')
             print(host_editado)
             host_validos.append(host_editado)
 
