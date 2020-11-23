@@ -130,13 +130,12 @@ def get_monitoramento():
     resp['pct_disco'] = pct_disco
     resp['infos'] = infos
     resp['CPUS'] = CPUS
+    resp['disco'] = disco
     
     return resp
 
-qtd_processos=0
 page_size=20
 def get_processos(page):
-    global qtd_processos
     def pegar_info(pid):
         try:
             p = psutil.Process(pid)
@@ -179,6 +178,7 @@ def get_processos(page):
 
     resp['pagina']=pages[page]
     resp['max']=len(pages)-1
+    resp['qtd']=len(lista)
 
     return resp
 
