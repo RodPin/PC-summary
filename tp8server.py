@@ -113,11 +113,14 @@ def get_monitoramento():
     pct_cpu = psutil.cpu_percent()
     pct_disco = psutil.disk_usage('.').percent
 
+    CPUS=psutil.cpu_percent(percpu=True)
+
     resp = dict()
     resp['pct_memoria'] = pct_memoria
     resp['pct_cpu'] = pct_cpu
     resp['pct_disco'] = pct_disco
     resp['infos'] = infos
+    resp['CPUS'] = CPUS
     
     return resp
 
@@ -177,7 +180,7 @@ while True:
     (socket_cliente,addr) = socket_servidor.accept()	
     print("Conectado a:", str(addr))
     resposta = ''
-    msg = socket_cliente.recv(4096)
+    msg = socket_cliente.recv(1024)
     # Decodifica mensagem em ASCII
     msg = pickle.loads(msg)
     print('Tipo requisicao:',msg['name'])
@@ -185,6 +188,5 @@ while True:
         resposta = pickle.dumps(get_monitoramento())
     if msg['name'] == 'processos':
         resposta = pickle.dumps(get_processos(msg['payload']))
-    socket_cliente.send(resposta)
     socket_cliente.send(resposta)
     socket_cliente.close()
