@@ -4,6 +4,8 @@ import platform
 import cpuinfo
 import pickle
 import time
+import os
+from datetime import datetime
 # Cria o socket
 socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Obtém o nome da máquina
@@ -174,6 +176,34 @@ def get_processos(page):
     return resp
 
 
+def get_diretorios():
+    directs = os.listdir('./')
+    diretorios = dict()
+    totArquivos=0
+    totBytes=0
+    lista = []
+    t="|{:35}|{:>10}|{:21}|{:21}|"
+    lista.append(t.format("Name","Size","Criado em","Modificado em"))
+    
+    for name in directs:
+        namePath = './'+name
+
+        dtatime = datetime.fromtimestamp(os.stat(namePath).st_atime)
+
+        formatdtatime = ("{:{dfmt} {tfmt}}".format(dtatime, dfmt="%d-%m-%Y", tfmt="%H:%M"))
+        dtmtime = datetime.fromtimestamp(os.stat(namePath).st_mtime)
+        formatdtmtime = ("{:{dfmt} {tfmt}}".format(dtmtime, dfmt="%d-%m-%Y", tfmt="%H:%M"))
+
+        text = t.format(name,str(os.stat(namePath).st_size/1000),formatdtatime,formatdtmtime)
+        lista.append(text)
+       
+        totArquivos +=1
+        totBytes = totBytes + os.stat(namePath).st_size
+
+    diretorios['lista'] = lista
+    diretorios['total'] = totArquivos
+    diretorios['bytes_total'] = totBytes
+    return diretorios
 
 while True:
     # Aceita alguma conexão
@@ -188,5 +218,7 @@ while True:
         resposta = pickle.dumps(get_monitoramento())
     if msg['name'] == 'processos':
         resposta = pickle.dumps(get_processos(msg['payload']))
+    if msg['name'] == 'diretorios':
+        resposta = pickle.dumps(get_diretorios())
     socket_cliente.send(resposta)
     socket_cliente.close()
