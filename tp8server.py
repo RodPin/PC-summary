@@ -21,23 +21,26 @@ sistema = platform.system()
 
 print("Servidor de nome", host, "esperando conexão na porta", porta)
 
+interface_rede_atual= ['',0]
+redes_infos = psutil.net_io_counters(pernic=True)
+for info_rede in redes_infos:
+    bytes_env=redes_infos[info_rede].bytes_sent
+    if interface_rede_atual[1] < bytes_env:
+        interface_rede_atual[0] =info_rede
+        interface_rede_atual[1]= bytes_env
+
 processador='Processador: '
-rede=''
 array=0 
 sistema = platform.system()
 info = cpuinfo.get_cpu_info()
-rede=''
 processador=''
 if sistema == 'Linux':
-    rede='wlp3s0'
     processador += info['brand_raw']
 elif sistema == 'Windows':
-    rede='Wi-Fi'
     array=1
     processador += platform.processor()
 elif sistema == 'Darwin':
     processador += info['brand_raw']
-    rede='en0'
 
 #CPU
 cpus_count=psutil.cpu_count()
@@ -62,7 +65,7 @@ def get_monitoramento():
     memoria_livre="Memoria Livre:"+ inGB(mem.free)+ " GB"
     memoria_usada="Memoria Usada:"+ inGB(mem.used)+ " GB"
 
-    net= psutil.net_if_addrs()[rede][0]
+    net= psutil.net_if_addrs()[interface_rede_atual[0]][0]
     nets=[]
 
     for i in psutil.net_if_addrs():
@@ -205,6 +208,19 @@ def get_diretorios():
     diretorios['bytes_total'] = totBytes
     return diretorios
 
+def get_trafego_rede():
+    redes_infos = psutil.net_io_counters(pernic=True)
+    t2="|{:^20}|{:^20}|{:^20}|{:^20}|{:^20}|"
+    textos_rede_info=[]        
+    textos_rede_info.append(t2.format('Interface','Bytes enviados','Bytes Recebidos','Pacotes enviados','Pacotes recebidos'))
+    for info_rede in redes_infos:
+        ri_dic=redes_infos[info_rede]
+        label = t2.format(info_rede,ri_dic.bytes_sent,ri_dic.bytes_recv,ri_dic.packets_sent,ri_dic.packets_recv)
+        textos_rede_info.append(label)
+    return textos_rede_info  
+
+
+
 while True:
     # Aceita alguma conexão
     (socket_cliente,addr) = socket_servidor.accept()	
@@ -220,5 +236,7 @@ while True:
         resposta = pickle.dumps(get_processos(msg['payload']))
     if msg['name'] == 'diretorios':
         resposta = pickle.dumps(get_diretorios())
+    if msg['name'] == 'trafego_rede':
+        resposta = pickle.dumps(get_trafego_rede())
     socket_cliente.send(resposta)
     socket_cliente.close()
