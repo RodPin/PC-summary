@@ -6,6 +6,10 @@ import pickle
 import time
 import os
 from datetime import datetime
+from threading import Thread
+import nmap
+import subprocess
+
 # Cria o socket
 socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Obtém o nome da máquina
@@ -219,24 +223,120 @@ def get_trafego_rede():
         textos_rede_info.append(label)
     return textos_rede_info  
 
+def retorna_codigo_ping(hostname):
+    plataforma = platform.system()
+    args = []
+    if plataforma == "Windows":
+        args = ["ping", "-n", "1", "-l", "1", "-w", "100", hostname]
 
+    else:
+        args = ['ping', '-c', '1', '-W', '1', hostname]
+        
+    ret_cod = subprocess.call(args,stdout=open(os.devnull, 'w'),stderr=open(os.devnull, 'w'))
+    return ret_cod
+
+def get_host():
+    global interface_rede_atual
+    aux = psutil.net_if_addrs()[interface_rede_atual[0]][array].address.split('.')
+    aux.pop()
+    return '.'.join(aux)+'.'
+def verifica_hosts(base_ip=get_host()):
+    host_validos = []
+    return_codes = dict()
+    for i in range(1,8):
+        host_editado = base_ip + '{0}'.format(i)
+        return_codes[host_editado] = retorna_codigo_ping(host_editado)
+        if i %20 ==0:
+            print(".", end = "")
+        if return_codes[host_editado] == 0:
+            print(host_editado)
+            host_validos.append(host_editado)
+
+    return host_validos
+
+def adiciona_info_portas(nm,host,info_hosts):
+    nm.scan(host,arguments='--exclude-ports 9999')
+    info_hosts[host]={}
+    info_hosts[host]['name']=nm[host]['hostnames'][0]['name']  
+    for proto in nm[host].all_protocols():
+        print('----------')
+        info_hosts[host]['protocol']=proto
+
+        lport = nm[host][proto].keys()
+        #lport.sort()
+        
+        aux=[]
+        for port in lport:
+            print('port',port)
+            aux.append(str(port))
+            print ('Porta: %s\t Estado: %s' % (port, nm[host][proto][port]['state']))
+        info_hosts[host]['ports']=','.join(aux)
+                
+rede_info= None
+
+def obter_info_hosts():
+    global rede_info
+    hosts_verificados=verifica_hosts()
+    nm = nmap.PortScanner()
+    info_hosts= dict()
+    for host in hosts_verificados:
+        try:
+            print('Scanning host in hosts valido: ',host)
+            adiciona_info_portas(nm,host,info_hosts)
+        except:
+            pass
+        
+    rede_info = info_hosts 
+
+thread_rede = Thread(target = obter_info_hosts, args = ())
+thread_rede.start()
+
+def get_hosts():
+    global interface_rede_atual
+    if thread_rede.is_alive():
+        return 'carregando'
+    else:    
+        textos = []
+        t="|{:^20}|{:^25}|{:^16}|{:^21}|"
+        rede_text='Interface de rede mais utilizada: ' + interface_rede_atual[0]
+        textos.append(rede_text)
+        textos.append(t.format('Host','Nome','Protocolo','Portas'))
+        thread_rede.join()
+        hosts = rede_info
+        UNKNOWN = 'Desconhecido'
+        def getInfo(info):
+            if info in hosts[host]:
+                if hosts[host][info] == '':
+
+                    return UNKNOWN
+                return hosts[host][info]
+            return UNKNOWN
+
+        for idx,host in enumerate(hosts):
+            label = t.format(host,getInfo('name'),getInfo('protocol'),getInfo('ports'))   
+            textos.append(label)
+
+        return textos
 
 while True:
     # Aceita alguma conexão
     (socket_cliente,addr) = socket_servidor.accept()	
     print("Conectado a:", str(addr))
     resposta = ''
-    msg = socket_cliente.recv(1024)
+    msg = socket_cliente.recv(4096)
     # Decodifica mensagem em ASCII
     msg = pickle.loads(msg)
     print('Tipo requisicao:',msg['name'])
     if msg['name'] == 'monitoramento': 
-        resposta = pickle.dumps(get_monitoramento())
+        resposta = get_monitoramento()
     if msg['name'] == 'processos':
-        resposta = pickle.dumps(get_processos(msg['payload']))
+        page=msg['payload']
+        resposta = get_processos(page)
     if msg['name'] == 'diretorios':
-        resposta = pickle.dumps(get_diretorios())
+        resposta = get_diretorios()
     if msg['name'] == 'trafego_rede':
-        resposta = pickle.dumps(get_trafego_rede())
-    socket_cliente.send(resposta)
+        resposta = get_trafego_rede()
+    if msg['name'] == 'hosts':
+        resposta = get_hosts()
+    socket_cliente.send(pickle.dumps(resposta))
     socket_cliente.close()

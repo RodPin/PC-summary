@@ -19,7 +19,8 @@ def request(message):
 
 # resposta = request({'name':'processos','payload':2})
 # resposta = request({'name':'diretorios'})
-resposta = request({'name':'trafego_rede'})
+# resposta = request({'name':'trafego_rede'})
+resposta = request({'name':'hosts'})
 # resposta = request({'name':'monitoramento'})
 for resp in resposta:
     print(resp)
