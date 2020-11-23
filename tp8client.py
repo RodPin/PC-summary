@@ -1,20 +1,24 @@
-import socket,time
+import socket,time,pickle
 
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
-s.connect(('192.168.100.7',9999))
+# host = socket.gethostname()
+host = '192.168.100.7'
+s.connect((host,9999))
 
-def sendmessage(message):
+def request(message):
     try:
-        s.send(message.encode('utf-8'))
-        data = s.recv(1024)
-        return data.decode('utf-8')
+        message = pickle.dumps(message)
+        s.send(message)
+        data = s.recv(4096)
+        return pickle.loads(data)
     except Exception as erro:
         print(str(erro))
 
 
-resposta = sendmessage('Ola servidor') 
 
+resposta = request({'name':'processos','payload':2})
+# resposta = request({'name':'monitoramento'})
 print(resposta)
 print('closing')
 s.close()
