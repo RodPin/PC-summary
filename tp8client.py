@@ -44,11 +44,10 @@ BORDA=15
 clock = pygame.time.Clock()
 
 #  cpus_count + 2 pois a barra de Disco e de memoria sao fixas (2 barras a mais)
-LARGURA_TELA= 1200
-LARGURA_TELA2= 1200
+LARGURA_TELA= 1300
 LEGENDA_X=LARGURA_TELA -ESPACO_BARRAS_E_LEGENDA- BORDA - TAMANHO_LEGENDA + ESPACO_BARRAS_E_LEGENDA
 ALTURA_TELA=630
-DISPLAY=pygame.display.set_mode((LARGURA_TELA2,ALTURA_TELA),0,32)
+DISPLAY=pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA),0,32)
 
 
 def inGB(m):
@@ -143,6 +142,8 @@ def desenhar_info(array):
     title_element= title.render(array[0], 1, WHITE)
     surface.blit(title_element,(40,0))
 
+    surface.blit(myfont.render('Utilize ↑ ↓ para navegar',1, WHITE),(280,0))
+
     for i,info in enumerate(array):
         if i!=0:
             #Seta os textos
@@ -170,7 +171,7 @@ def desenha_arquivos():
     textos=[]
     resposta = request({'name':'diretorios'})
     myfont = pygame.font.SysFont("Courier", 20)
-    surface = pygame.surface.Surface((LARGURA_TELA2, 900))
+    surface = pygame.surface.Surface((LARGURA_TELA, 900))
 
     def escrever(label,namePath='',idx=None):
         textos.append(myfont.render(label,1, WHITE))
@@ -187,24 +188,31 @@ def desenha_arquivos():
     DISPLAY.blit(surface,(20,20))
     end_time=time.process_time()
     
-page=0
-pages=[]
 
+pagina=0
+max_pagina=0
 
-pagina=2
 def desenha_processos():
-    global pagina
+    global pagina , max_pagina
     initial_time=time.process_time()
-    myfont = pygame.font.SysFont("Courier", 15)
-    surface = pygame.surface.Surface((LARGURA_TELA2, 2000))
+    myfont = pygame.font.SysFont("Courier", 16)
+    myfont2 = pygame.font.SysFont("Arial", 16)
+    surface = pygame.surface.Surface((LARGURA_TELA, 2000))
 
     def escrever(label,idx):
         txt=myfont.render(label,1, WHITE)
         surface.blit(txt, (2 ,100 +   20*idx))
 
+    def escrever2(label,idx):
+        surface.blit(myfont2.render(label,1, WHITE), (2 ,100 +   20*idx))
     resposta = request({'name':'processos','payload':pagina})
-    escrever('Quantidade de processos: '+str(resposta['qtd']),-3)
-    escrever('Pagina '+str(pagina)+'/'+str(resposta['max']),-2)
+
+    max_pagina = resposta['max']
+    
+    escrever2('Utilize ↑ ↓ para navegar',-4)
+    escrever2('Quantidade de processos: '+str(resposta['qtd']),-3)
+    escrever2('Pagina '+str(pagina+1)+'/'+str(resposta['max']+1),-2)
+
     for idx,line in enumerate(resposta['pagina']):
         escrever(line,idx)
 
@@ -215,8 +223,8 @@ def desenha_processos():
 
 def desenha_hosts():
     myfont = pygame.font.SysFont("Courier", 20)
-    surface = pygame.surface.Surface((LARGURA_TELA2, 900))
-    surface2 = pygame.surface.Surface((LARGURA_TELA2, 200))
+    surface = pygame.surface.Surface((LARGURA_TELA, 900))
+    surface2 = pygame.surface.Surface((LARGURA_TELA, 200))
     
     def escrever(texto):
         return myfont.render(texto,1, WHITE)
@@ -243,6 +251,12 @@ def desenha_hosts():
     DISPLAY.blit(surface2,(20,20))
 
 
+def desenha_navegacao():
+    myfont = pygame.font.SysFont("Arial", 15)
+    surface = pygame.surface.Surface((LARGURA_TELA, 300))
+    surface.blit(myfont.render('Utilize ← ou → para navegar',1, WHITE),(280,0))
+    DISPLAY.blit(surface,(220,ALTURA_TELA-40))
+
 DISPLAY.fill(BLACK)
 index=0
 index_copy=None
@@ -260,25 +274,19 @@ while True:
             sys.exit() 
         #============================================================== Mudanca de aba
         if event.type == pygame.KEYDOWN :
-            if event.key == pygame.K_1:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA),0,32)
-                aba=1
-            if event.key == pygame.K_2:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA2,ALTURA_TELA),0,32)
-                aba=2
-            if event.key == pygame.K_3:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA2+100,ALTURA_TELA),0,32)
-                aba=3
-            if event.key == pygame.K_4:
-                DISPLAY=pygame.display.set_mode((LARGURA_TELA2+100,ALTURA_TELA),0,32)
-                aba=4
+            if event.key == pygame.K_LEFT:
+                if aba > 1:
+                    aba=aba-1
+            if event.key == pygame.K_RIGHT:
+                if aba < 4:
+                    aba=aba+1
         #============================================================== Primeira ABA
-        if aba ==1:
+        if aba == 1:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                if event.key == pygame.K_UP:
                     if index > 0  and index != 4:
                         index=index-1
-                if event.key == pygame.K_RIGHT:
+                if event.key == pygame.K_DOWN:
                     if index < 3 and index != 4:
                         index=index+1
                 if event.key == pygame.K_SPACE:
@@ -295,20 +303,23 @@ while True:
             #==============================================================
         if aba ==3:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT and page < len(pages)-1:
-                    page=page+1
-                if event.key == pygame.K_LEFT and page > 0:
-                    page=page-1
+                if event.key == pygame.K_UP and pagina < max_pagina:
+                    pagina=pagina+1
+                if event.key == pygame.K_DOWN and pagina > 0:
+                    pagina=pagina-1
         
 
     if aba == 1:
         desenhar_monitoramento()
     if aba == 2:
         scheduler.enter(0, 1, desenha_arquivos, ())
+        scheduler.run()
     if aba == 3:
         desenha_processos()
     if aba == 4:
         desenha_hosts()
-    scheduler.run()
+
+    desenha_navegacao()
+    
     pygame.display.update()
 
