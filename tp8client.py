@@ -25,35 +25,6 @@ def request(message):
 
 scheduler = sched.scheduler(time.time, time.sleep)
 
-processador='Processador: '
-rede=''
-array=0 
-sistema = platform.system()
-info = cpuinfo.get_cpu_info()
-
-
-PATH = os.path.abspath('./')
-
-
-if sistema == 'Linux':
-    rede='wlp3s0'
-    processador += info['brand_raw']
-elif sistema == 'Windows':
-    rede='Wi-Fi'
-    array=1
-    processador += platform.processor()
-elif sistema == 'Darwin':
-    processador += info['brand_raw']
-    rede='en0'
-
-#CPU
-cpus_count=psutil.cpu_count()
-nome= processador
-bits='Palavra: '+str(info['bits']) + ' Bits'
-cpuscount='Núcleos (Logicos):'+str(cpus_count)
-cpuscountfisical='Nucleos (Fisicos):'+str(psutil.cpu_count(logical=False))
-frequencia_total='Frequencia total: '+str(round(psutil.cpu_freq().max,2)) +' MHz'
-
 BLACK=(0,0,0)
 WHITE=(255,255,255)
 RED=(255,40,0)
@@ -180,9 +151,7 @@ def desenhar_info(array):
     DISPLAY.blit(surface,(20,ALTURA_BARRA+100))
 
 def desenhar_monitoramento():
-    global cont,CPUS
     resposta = request({'name':'monitoramento'})
-    print(resposta)
 
 
     desenhar_bolinhas(index,resposta['infos'])
@@ -217,40 +186,9 @@ def desenha_arquivos():
     DISPLAY.blit(surface,(20,20))
     end_time=time.process_time()
     
-process_count=0
 page=0
-page_size=20
 pages=[]
 
-def titulo():
-    titulo = '{:^7}'.format("PID")
-    titulo = titulo + '{:^11}'.format("# Threads")
-    titulo = titulo + '{:^26}'.format("Criação")
-    titulo = titulo + '{:^9}'.format("T. Usu.")
-    titulo = titulo + '{:^9}'.format("T. Sis.")
-    titulo = titulo + '{:^12}'.format("Memoria(%)")
-    titulo = titulo + '{:^12}'.format("RSS")
-    titulo = titulo + '{:^12}'.format("VMS")
-    titulo = titulo + " Executável"
-    return titulo
-
-def pegar_info(pid):
-    try:
-        p = psutil.Process(pid)
-        texto = '{:^7}'.format(pid)
-        texto = texto + '{:^11}'.format(p.num_threads())
-        texto = texto + " " + time.ctime(p.create_time()) + " "
-        texto = texto + '{:8.2f}'.format(p.cpu_times().user)
-        texto = texto + '{:8.2f}'.format(p.cpu_times().system)
-        texto = texto + '{:10.2f}'.format(p.memory_percent()) + " MB"
-        rss = p.memory_info().rss/1024/1024
-        texto = texto + '{:10.2f}'.format(rss) + " MB"
-        vms = p.memory_info().vms/1024/1024
-        texto = texto + '{:10.2f}'.format(vms) + " MB"
-        texto = texto + " " + p.exe()
-        return texto
-    except:
-        pass  
 
 pagina=2
 def desenha_processos():
@@ -307,12 +245,7 @@ index=0
 index_copy=None
 clock.tick(60)
 CPUS=psutil.cpu_percent(interval=0.1, percpu=True)
-cont=0
 
-mouseIn=False
-surfaceVoltar = pygame.surface.Surface((102,29))
-idxMouseOnTop=''
-dirs=[]
 aba=4
 while True:
     DISPLAY.fill(BLACK)
@@ -354,28 +287,7 @@ while True:
         
         #============================================================== Segunda Aba
         if aba==2:
-            if event.type == MOUSEMOTION:
-                mouseX,mouseY = event.pos
-                if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
-                    mouseIn=True
-                else:
-                    mouseIn=False
-                    
-            if event.type == pygame.MOUSEBUTTONUP:  # or MOUSEBUTTONDOWN depending on what you want.
-                mouseX,mouseY=event.pos
-                if mouseX>32 and mouseX <134 and mouseY>38 and mouseY<67:
-                    voltarPath()
-
-            if event.type == MOUSEMOTION or event.type == pygame.MOUSEBUTTONUP and mouseX > 30 and mouseX <  1120:
-                mouseX,mouseY = event.pos
-        
-                firstY=147
-                if mouseY>firstY:
-                    idxMouseOnTop=int((mouseY-firstY)/25)
-                    if event.type == pygame.MOUSEBUTTONUP:
-                        clickEntrar(PATH+'/'+dirs[idxMouseOnTop])
-                else:
-                    idxMouseOnTop=False
+            print('aba2')
             #==============================================================
         if aba ==3:
             if event.type == pygame.KEYDOWN:
