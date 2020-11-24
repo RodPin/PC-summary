@@ -1,4 +1,12 @@
 import socket,time,pickle
+import platform
+import psutil
+import pygame, sys
+from pygame.locals import *
+import cpuinfo 
+import os
+import sched 
+import time
 
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
@@ -7,36 +15,13 @@ host = '192.168.100.7'
 s.connect((host,9999))
 
 def request(message):
-      try:
+    try:
         message = pickle.dumps(message)
         s.send(message)
         data = s.recv(4096)
         return pickle.loads(data)
     except Exception as erro:
         print(str(erro))
-    
-
-
-
-# resposta = request({'name':'processos','payload':2})
-# resposta = request({'name':'diretorios'})
-# resposta = request({'name':'trafego_rede'})
-# resposta = request({'name':'hosts'})
-# resposta = request({'name':'monitoramento'})
-
-
-import platform
-import psutil
-import pygame, sys
-from pygame.locals import *
-import cpuinfo 
-import os
-from datetime import datetime
-import sched 
-import time
-import nmap
-import subprocess
-from threading import Thread
 
 scheduler = sched.scheduler(time.time, time.sleep)
 
@@ -63,7 +48,6 @@ elif sistema == 'Darwin':
 
 #CPU
 cpus_count=psutil.cpu_count()
-arquitetura = 'Arquitetura: '  + info['arch']
 nome= processador
 bits='Palavra: '+str(info['bits']) + ' Bits'
 cpuscount='Núcleos (Logicos):'+str(cpus_count)
@@ -88,7 +72,7 @@ BORDA=15
 clock = pygame.time.Clock()
 
 #  cpus_count + 2 pois a barra de Disco e de memoria sao fixas (2 barras a mais)
-LARGURA_TELA= LARGURA_BARRA * (2+cpus_count) + ESPACO_BARRA*(2+cpus_count-1) + BORDA*2 + TAMANHO_LEGENDA + ESPACO_BARRAS_E_LEGENDA
+LARGURA_TELA= 1200
 LARGURA_TELA2= 1200
 LEGENDA_X=LARGURA_TELA -ESPACO_BARRAS_E_LEGENDA- BORDA - TAMANHO_LEGENDA + ESPACO_BARRAS_E_LEGENDA
 ALTURA_TELA=630
@@ -290,61 +274,30 @@ def desenha_processos():
     end_time=time.process_time()
 
 
-#############################################    
-interface_rede_atual = ['',0]
 def desenha_hosts():
-    global interface_rede_atual    
-    
     myfont = pygame.font.SysFont("Courier", 20)
     surface = pygame.surface.Surface((LARGURA_TELA2, 900))
     surface2 = pygame.surface.Surface((LARGURA_TELA2, 200))
-    textos=[]
-
-    if thread_rede.is_alive():
-        texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
-        surface.blit(texto, (0 , 0))       
-        DISPLAY.blit(surface,(400,300))
-    else:    
-        t="|{:^20}|{:^25}|{:^16}|{:^21}|"
-        rede_text='Interface de rede mais utilizada: ' + interface_rede_atual[0]
-        textos.append(myfont.render(rede_text,1,WHITE))
-        textos.append(myfont.render(t.format('Host','Nome','Protocolo','Portas'),1, WHITE))
-        thread_rede.join()
-        hosts = rede_info
-        UNKNOWN = 'Desconhecido'
-        def getInfo(info):
-            if info in hosts[host]:
-                if hosts[host][info] == '':
-
-                    return UNKNOWN
-                return hosts[host][info]
-            return UNKNOWN
-
-        for idx,host in enumerate(hosts):
-            label = t.format(host,getInfo('name'),getInfo('protocol'),getInfo('ports'))   
-            textos.append(myfont.render(label,1, WHITE))
-
-        for idx,texto in enumerate(textos):
-            surface.blit(texto, (2 ,25*idx))       
-         
-        DISPLAY.blit(surface,(20,300))
-
-
-    redes_infos = psutil.net_io_counters(pernic=True)
-    t2="|{:^20}|{:^20}|{:^20}|{:^20}|{:^20}|"
-    textos_rede_info=[]        
-    textos_rede_info.append(myfont.render(t2.format('Interface','Bytes enviados','Bytes Recebidos','Pacotes enviados','Pacotes recebidos'),1, WHITE))
-    for info_rede in redes_infos:
-        ri_dic=redes_infos[info_rede]
-        label = t2.format(info_rede,ri_dic.bytes_sent,ri_dic.bytes_recv,ri_dic.packets_sent,ri_dic.packets_recv)
-        textos_rede_info.append(myfont.render(label,1, WHITE))  
-
-        if interface_rede_atual[1] < ri_dic.bytes_sent:
-            interface_rede_atual[0]=info_rede
-            interface_rede_atual[1]= ri_dic.bytes_sent
     
-    for idx,texto in enumerate(textos_rede_info): 
-        surface2.blit(texto, (2 ,25*idx))             
+    def escrever(texto):
+        return myfont.render(texto,1, WHITE)
+
+    # resposta = request({'name':'hosts'})
+    # if resposta=='carregando':
+    #     texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
+    #     surface.blit(texto, (0 , 0))       
+    #     DISPLAY.blit(surface,(400,300))
+    # else:    
+    #     for idx,texto in enumerate(resposta):
+    #         surface.blit(escrever(texto), (2 ,25*idx))       
+         
+    # DISPLAY.blit(surface,(20,300))
+
+
+    resposta2 = request({'name':'trafego_rede'})
+
+    for idx,texto in enumerate(resposta2): 
+        surface2.blit(escrever(texto), (2 ,25*idx))             
 
     DISPLAY.blit(surface2,(20,20))
 
@@ -360,7 +313,7 @@ mouseIn=False
 surfaceVoltar = pygame.surface.Surface((102,29))
 idxMouseOnTop=''
 dirs=[]
-aba=3
+aba=4
 while True:
     DISPLAY.fill(BLACK)
 
@@ -438,8 +391,8 @@ while True:
         scheduler.enter(0, 1, desenha_arquivos, ())
     if aba == 3:
         desenha_processos()
-    # # if aba == 4:
-    # #     desenha_hosts()
+    if aba == 4:
+        desenha_hosts()
     scheduler.run()
     pygame.display.update()
     time.sleep(10)
