@@ -319,8 +319,8 @@ def get_hosts():
         return textos
 
 while True:
-    # Aceita alguma conexão
     (socket_cliente,addr) = socket_servidor.accept()	
+    # Aceita alguma conexão
     print("Conectado a:", str(addr))
     resposta = ''
     msg = socket_cliente.recv(4096)
@@ -338,5 +338,6 @@ while True:
         resposta = get_trafego_rede()
     if msg['name'] == 'hosts':
         resposta = get_hosts()
-    socket_cliente.send(pickle.dumps(resposta))
+    pickled= pickle.dumps(resposta)
+    socket_cliente.send(pickled)
     socket_cliente.close()

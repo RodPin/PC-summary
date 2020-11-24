@@ -8,17 +8,18 @@ import os
 import sched 
 import time
 
-s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 # host = socket.gethostname()
 host = '192.168.100.7'
-s.connect((host,9999))
 
 def request(message):
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.connect((host,9999))
     try:
         message = pickle.dumps(message)
         s.send(message)
         data = s.recv(4096)
+        s.close()
         return pickle.loads(data)
     except Exception as erro:
         print(str(erro))
@@ -220,16 +221,18 @@ def desenha_hosts():
     def escrever(texto):
         return myfont.render(texto,1, WHITE)
 
-    # resposta = request({'name':'hosts'})
-    # if resposta=='carregando':
-    #     texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
-    #     surface.blit(texto, (0 , 0))       
-    #     DISPLAY.blit(surface,(400,300))
-    # else:    
-    #     for idx,texto in enumerate(resposta):
-    #         surface.blit(escrever(texto), (2 ,25*idx))       
+    resposta = request({'name':'hosts'})
+
+    print(resposta)
+    if resposta=='carregando':
+        texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
+        surface.blit(texto, (0 , 0))       
+        DISPLAY.blit(surface,(400,300))
+    else:    
+        for idx,texto in enumerate(resposta):
+            surface.blit(escrever(texto), (2 ,25*idx))       
          
-    # DISPLAY.blit(surface,(20,300))
+    DISPLAY.blit(surface,(20,300))
 
 
     resposta2 = request({'name':'trafego_rede'})
@@ -246,7 +249,8 @@ index_copy=None
 clock.tick(60)
 CPUS=psutil.cpu_percent(interval=0.1, percpu=True)
 
-aba=4
+aba=1
+
 while True:
     DISPLAY.fill(BLACK)
 
@@ -307,6 +311,4 @@ while True:
         desenha_hosts()
     scheduler.run()
     pygame.display.update()
-    time.sleep(10)
-    break
 
