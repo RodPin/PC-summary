@@ -464,7 +464,7 @@ def get_host():
 def verifica_hosts(base_ip=get_host()):
     host_validos = []
     return_codes = dict()
-    for i in range(1,10):
+    for i in range(1,255):
         print('i',i)
         host_editado = base_ip + '{0}'.format(i)
         return_codes[host_editado] = retorna_codigo_ping(host_editado)
