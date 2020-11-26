@@ -55,7 +55,10 @@ cpuscount='Núcleos (Logicos):'+str(cpus_count)
 cpuscountfisical='Nucleos (Fisicos):'+str(psutil.cpu_count(logical=False))
 frequencia_total='Frequencia total: '+str(round(psutil.cpu_freq().max,2)) +' MHz'
 
+CPUS=''
+count=0
 def get_monitoramento():
+    global CPUS,count
     def inGB(m):
         if m is not None:
             return str(round(m/(1024*1024*1024),2))
@@ -122,7 +125,11 @@ def get_monitoramento():
     pct_cpu = psutil.cpu_percent()
     pct_disco = psutil.disk_usage('.').percent
 
-    CPUS=psutil.cpu_percent(percpu=True)
+    if count == 0:
+        CPUS=psutil.cpu_percent(percpu=True)
+    count=count+1
+    if count == 4:
+        count=0
 
     resp = dict()
     resp['pct_memoria'] = pct_memoria
