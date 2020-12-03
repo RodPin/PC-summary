@@ -9,20 +9,23 @@ import sched
 import time
 
 
-# host = socket.gethostname()
-host = '192.168.100.7'
+host = socket.gethostname()
+# host = '192.168.100.7'
+
 
 def request(message):
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.connect((host,9999))
     try:
+        s.connect((host,9999))
         message = pickle.dumps(message)
         s.send(message)
         data = s.recv(4096)
         s.close()
         return pickle.loads(data)
     except Exception as erro:
-        print(str(erro))
+        print('Servidor desligado, tentando reconexao')
+        time.sleep(5)
+        return request(message)
 
 scheduler = sched.scheduler(time.time, time.sleep)
 
@@ -231,7 +234,6 @@ def desenha_hosts():
 
     resposta = request({'name':'hosts'})
 
-    print(resposta)
     if resposta=='carregando':
         texto=myfont.render('Consultando informacoes de rede...',1,WHITE)
         surface.blit(texto, (0 , 0))       

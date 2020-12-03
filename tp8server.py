@@ -13,8 +13,9 @@ import subprocess
 # Cria o socket
 socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # Obtém o nome da máquina
-# host = socket.gethostname()
-host = '192.168.100.7'
+# host = '192.168.100.7'
+host = socket.gethostname()
+
 porta = 9999
 # Associa a porta
 socket_servidor.bind((host, porta))
@@ -51,8 +52,8 @@ cpus_count=psutil.cpu_count()
 arquitetura = 'Arquitetura: '  + info['arch']
 nome= processador
 bits='Palavra: '+str(info['bits']) + ' Bits'
-cpuscount='Núcleos (Logicos):'+str(cpus_count)
-cpuscountfisical='Nucleos (Fisicos):'+str(psutil.cpu_count(logical=False))
+cpuscount='Núcleos (Logicos): '+str(cpus_count)
+cpuscountfisical='Nucleos (Fisicos): '+str(psutil.cpu_count(logical=False))
 frequencia_total='Frequencia total: '+str(round(psutil.cpu_freq().max,2)) +' MHz'
 
 CPUS=''
@@ -67,10 +68,10 @@ def get_monitoramento():
 
     #Memoria
     mem = psutil.virtual_memory()
-    memoria_total="Memoria Total:"+ inGB(mem.total)+ " GB"
-    memoria_disponivel="Memoria Disponivel:"+ inGB(mem.available)+ " GB"
-    memoria_livre="Memoria Livre:"+ inGB(mem.free)+ " GB"
-    memoria_usada="Memoria Usada:"+ inGB(mem.used)+ " GB"
+    memoria_total="Memoria Total: "+ inGB(mem.total)+ " GB"
+    memoria_disponivel="Memoria Disponivel: "+ inGB(mem.available)+ " GB"
+    memoria_livre="Memoria Livre: "+ inGB(mem.free)+ " GB"
+    memoria_usada="Memoria Usada: "+ inGB(mem.used)+ " GB"
 
     net= psutil.net_if_addrs()[interface_rede_atual[0]][0]
     nets=[]
@@ -87,19 +88,19 @@ def get_monitoramento():
     memoria_os=[]
     net_os=[]
     if sistema == 'Linux':
-        memoria_buffers="Buffers:"+ inGB(mem.buffers)+ " GB"
-        memoria_cached="Cached:"+ inGB(mem.cached)+ " GB"
-        memoria_shared="Compartilhada:"+  inGB(mem.shared)+ " GB"
-        memoria_slab="Slab:"+ inGB(mem.slab)+ " GB"
-        memoria_ativa="Memoria Ativa:"+ inGB(mem.active)+ " GB"
-        memoria_inativa="Memoria Inativa:"+ inGB(mem.inactive)+ " GB"
+        memoria_buffers="Buffers: "+ inGB(mem.buffers)+ " GB"
+        memoria_cached="Cached: "+ inGB(mem.cached)+ " GB"
+        memoria_shared="Compartilhada: "+  inGB(mem.shared)+ " GB"
+        memoria_slab="Slab: "+ inGB(mem.slab)+ " GB"
+        memoria_ativa="Memoria Ativa: "+ inGB(mem.active)+ " GB"
+        memoria_inativa="Memoria Inativa: "+ inGB(mem.inactive)+ " GB"
         memoria_os=[memoria_buffers,memoria_cached,memoria_shared,memoria_slab,memoria_ativa,memoria_inativa]
         net_os=['BroadCast: '+net.broadcast]
     elif sistema == 'Windows':
         print("nenhum extra no windows")
     elif sistema == 'Darwin':
-        memoria_ativa="Memoria Ativa:"+ inGB(mem.active) + " GB"
-        memoria_inativa="Memoria Inativa:"+ inGB(mem.inactive) + " GB"
+        memoria_ativa="Memoria Ativa: "+ inGB(mem.active) + " GB"
+        memoria_inativa="Memoria Inativa: "+ inGB(mem.inactive) + " GB"
         memoria_wired="Wired: "+inGB(mem.wired)+ " GB"
         memoria_os=[memoria_ativa,memoria_inativa,memoria_wired]
         net_os=['BroadCast: '+ str(net.broadcast)]
@@ -113,8 +114,8 @@ def get_monitoramento():
 
     processador_info=['Processador:',nome,arquitetura,frequencia_total,frequencia,bits,cpuscount,cpuscountfisical]
     memoria_info=['Memoria: ', memoria_total,memoria_disponivel,memoria_usada,memoria_livre]+memoria_os
-    disco_info=['Disco:',disco_total,disco_usado,disco_livre]
-    net_info=['Rede:']+nets+net_os
+    disco_info=['Disco: ',disco_total,disco_usado,disco_livre]
+    net_info=['Rede: ']+nets+net_os
     resumo_info=['Resumo: ',nome,cpuscount,memoria_total,memoria_disponivel,memoria_usada,memoria_livre,disco_total,disco_usado,disco_livre,ip,netmask]
 
 
@@ -250,13 +251,12 @@ def get_host():
 def verifica_hosts(base_ip=get_host()):
     host_validos = []
     return_codes = dict()
-    for i in range(1,8):
+    for i in range(1,255):
         host_editado = base_ip + '{0}'.format(i)
         return_codes[host_editado] = retorna_codigo_ping(host_editado)
         if i %20 ==0:
             print(".", end = "")
         if return_codes[host_editado] == 0:
-            print(host_editado)
             host_validos.append(host_editado)
 
     return host_validos
@@ -266,7 +266,6 @@ def adiciona_info_portas(nm,host,info_hosts):
     info_hosts[host]={}
     info_hosts[host]['name']=nm[host]['hostnames'][0]['name']  
     for proto in nm[host].all_protocols():
-        print('----------')
         info_hosts[host]['protocol']=proto
 
         lport = nm[host][proto].keys()
@@ -274,9 +273,7 @@ def adiciona_info_portas(nm,host,info_hosts):
         
         aux=[]
         for port in lport:
-            print('port',port)
             aux.append(str(port))
-            print ('Porta: %s\t Estado: %s' % (port, nm[host][proto][port]['state']))
         info_hosts[host]['ports']=','.join(aux)
                 
 rede_info= None
@@ -288,7 +285,6 @@ def obter_info_hosts():
     info_hosts= dict()
     for host in hosts_verificados:
         try:
-            print('Scanning host in hosts valido: ',host)
             adiciona_info_portas(nm,host,info_hosts)
         except:
             pass
