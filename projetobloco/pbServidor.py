@@ -12,11 +12,10 @@ import subprocess
 
 # Cria o socket
 socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-socket_servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
 # Obtém o nome da máquina
 host = socket.gethostname()
 
-porta = 9998
+porta = 9999
 # Associa a porta
 socket_servidor.bind((host, porta))
 # Escutando...
@@ -75,8 +74,6 @@ def get_monitoramento():
 
     net= psutil.net_if_addrs()[interface_rede_atual[0]][0]
     nets=[]
-    ip=''
-    netmask=''
 
     for i in psutil.net_if_addrs():
         for x in psutil.net_if_addrs()[i]:
@@ -97,7 +94,7 @@ def get_monitoramento():
         memoria_ativa="Memoria Ativa: "+ inGB(mem.active)+ " GB"
         memoria_inativa="Memoria Inativa: "+ inGB(mem.inactive)+ " GB"
         memoria_os=[memoria_buffers,memoria_cached,memoria_shared,memoria_slab,memoria_ativa,memoria_inativa]
-        net_os=['BroadCast: '+str(net.broadcast)]
+        net_os=['BroadCast: '+net.broadcast]
     elif sistema == 'Windows':
         print("nenhum extra no windows")
     elif sistema == 'Darwin':
@@ -234,8 +231,6 @@ def get_trafego_rede():
     return textos_rede_info  
 
 def retorna_codigo_ping(hostname):
-    print('hostname')
-    print(hostname)
     plataforma = platform.system()
     args = []
     if plataforma == "Windows":
@@ -255,7 +250,7 @@ def get_host():
 def verifica_hosts(base_ip=get_host()):
     host_validos = []
     return_codes = dict()
-    for i in range(1,9):
+    for i in range(1,255):
         host_editado = base_ip + '{0}'.format(i)
         return_codes[host_editado] = retorna_codigo_ping(host_editado)
         if i %20 ==0:
@@ -333,7 +328,6 @@ while True:
     msg = socket_cliente.recv(4096)
     # Decodifica mensagem em ASCII
     msg = pickle.loads(msg)
-    print(msg)
     print('Tipo requisicao:',msg['name'])
     if msg['name'] == 'monitoramento': 
         resposta = get_monitoramento()

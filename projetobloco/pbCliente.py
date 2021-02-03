@@ -9,13 +9,13 @@ import sched
 import time
 
 
-host =  '172.17.0.2'
+host = socket.gethostname()
 
 
 def request(message):
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     try:
-        s.connect((host,9998))
+        s.connect((host,9999))
         message = pickle.dumps(message)
         s.send(message)
         data = s.recv(4096)
