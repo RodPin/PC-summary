@@ -94,7 +94,7 @@ def get_monitoramento():
         memoria_ativa="Memoria Ativa: "+ inGB(mem.active)+ " GB"
         memoria_inativa="Memoria Inativa: "+ inGB(mem.inactive)+ " GB"
         memoria_os=[memoria_buffers,memoria_cached,memoria_shared,memoria_slab,memoria_ativa,memoria_inativa]
-        net_os=['BroadCast: '+net.broadcast]
+        net_os=['BroadCast: '+str(net.broadcast)]
     elif sistema == 'Windows':
         print("nenhum extra no windows")
     elif sistema == 'Darwin':
