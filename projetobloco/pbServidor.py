@@ -12,6 +12,7 @@ import subprocess
 
 # Cria o socket
 socket_servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+socket_servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) 
 # Obtém o nome da máquina
 host = socket.gethostname()
 
